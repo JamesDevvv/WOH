@@ -1,0 +1,303 @@
+// Word of Hope Sta. Clara — Prisma Schema
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum AgeBracket {
+  C1
+  C2
+  C3
+}
+
+// ─── Auth Models (NextAuth) ─────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          UserRole  @default(VOLUNTEER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+
+  @@map("users")
+}
+
+model RoleSetting {
+  role        UserRole @id
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("role_settings")
+}
+
+model RolePermission {
+  id        String    @id @default(cuid())
+  role      UserRole
+  module    String
+  view      Boolean   @default(false)
+  create    Boolean   @default(false)
+  edit      Boolean   @default(false)
+  delete    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([role, module], name: "role_module_unique")
+  @@map("role_permissions")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─── Church Models ──────────────────────────────────────────────────────────
+
+model Status {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String   @default("#3b82f6")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  members Member[]
+
+  @@map("statuses")
+}
+
+model Group {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String   @default("#8b5cf6")
+  createdAt DateTime @default(now())
+
+  memberGroups MemberGroup[]
+  attendance   Attendance[]
+
+  @@map("groups")
+}
+
+model ServiceType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  icon      String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("service_types")
+}
+
+model Member {
+  id              String    @id @default(cuid())
+  name            String
+  contact         String?
+  email           String?
+  address         String?
+  birthdate       DateTime?
+  age             Int?
+  ageBracket      AgeBracket?
+  invitedBy       String?
+  statusId        String
+  leaderId        String?
+  notes           String?
+  lastInteraction DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  status        Status         @relation(fields: [statusId], references: [id])
+  leader        Member?        @relation("MemberLeader", fields: [leaderId], references: [id])
+  disciples     Member[]       @relation("MemberLeader")
+  memberGroups  MemberGroup[]
+  attendance    Attendance[]
+  training      Training[]
+  memberLessons MemberLesson[]
+
+  @@map("members")
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberLessons MemberLesson[]
+
+  @@map("lessons")
+}
+
+model MemberLesson {
+  id          String   @id @default(cuid())
+  memberId    String
+  lessonId    String
+  completedAt DateTime @default(now())
+  notes       String?
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, lessonId])
+  @@map("member_lessons")
+}
+
+model MemberGroup {
+  id        String   @id @default(cuid())
+  memberId  String
+  groupId   String
+  createdAt DateTime @default(now())
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, groupId])
+  @@map("member_groups")
+}
+
+model Attendance {
+  id          String   @id @default(cuid())
+  memberId    String
+  date        DateTime
+  serviceType String   @default("Sunday Service")
+  groupId     String?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  group  Group? @relation(fields: [groupId], references: [id])
+
+  @@map("attendance")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  date        DateTime
+  description String?
+  image       String?
+  category    String   @default("General")
+  location    String?
+  published   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("events")
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  title       String
+  schedule    String
+  description String?
+  icon        String?
+  category    String   @default("General")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("activities")
+}
+
+model Gallery {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  caption   String?
+  category  String   @default("General")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("gallery")
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  message   String
+  image     String?
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("testimonials")
+}
+
+model Training {
+  id         String     @id @default(cuid())
+  memberId   String
+  instrument String
+  skillLevel SkillLevel @default(BEGINNER)
+  progress   Int        @default(0)
+  trainer    String?
+  notes      String?
+  startDate  DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("training")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  LEADER
+  VOLUNTEER
+  PENDING
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
