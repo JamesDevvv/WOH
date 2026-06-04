@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 interface Testimonial {
   id: string;
   name: string;
@@ -5,18 +7,8 @@ interface Testimonial {
   image: string | null;
 }
 
-export function TestimonialsSection({
-  testimonials,
-}: {
-  testimonials: Testimonial[];
-}) {
-  const defaults: Testimonial[] = [
-    { id: "1", name: "Maria Santos", message: "Finding Word of Hope has been a blessing. The community here has helped me grow in my faith and find purpose.", image: null },
-    { id: "2", name: "Julie Cruz", message: "The youth ministry here has been transformative for my teenage daughter. She's found great friends who mentor her.", image: null },
-    { id: "3", name: "Bruno Myers", message: "I have never felt so welcoming and genuine from anyone. This church feels like family!", image: null },
-  ];
-
-  const display = testimonials.length > 0 ? testimonials.slice(0, 3) : defaults;
+export function TestimonialsSection({ testimonials }: { testimonials: Testimonial[] }) {
+  if (testimonials.length === 0) return null;
 
   return (
     <section id="testimonials" className="py-20 bg-[#F6FAFD]">
@@ -27,20 +19,27 @@ export function TestimonialsSection({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {display.map((t) => (
+          {testimonials.map((t) => (
             <div
               key={t.id}
-              className="p-6 rounded-xl bg-white border border-[#B3CFE5]/40 shadow-sm flex flex-col justify-between"
+              className="p-6 rounded-xl bg-white border border-[#B3CFE5]/40 shadow-sm flex flex-col"
             >
-              <p className="text-sm text-[#1A3D63] leading-relaxed mb-6">
+              {t.image && (
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="relative w-10 h-10 rounded-full overflow-hidden bg-slate-200 shrink-0">
+                    <Image src={t.image} alt={t.name} fill className="object-cover" unoptimized />
+                  </div>
+                  <span className="font-semibold text-[#0A1931] text-sm">{t.name}</span>
+                </div>
+              )}
+              <p className="text-sm text-[#1A3D63] leading-relaxed flex-1">
                 &ldquo;{t.message}&rdquo;
               </p>
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-[#0A1931] text-sm">{t.name}</span>
-                <button className="text-xs text-[#4A7FA7] hover:text-[#1A3D63] font-medium transition-colors">
-                  Show More
-                </button>
-              </div>
+              {!t.image && (
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <span className="font-semibold text-[#0A1931] text-sm">{t.name}</span>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -48,4 +47,3 @@ export function TestimonialsSection({
     </section>
   );
 }
-

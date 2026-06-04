@@ -112,7 +112,9 @@ export async function updateMember(
       ...(memberData.birthdate !== undefined && {
         birthdate: memberData.birthdate ? new Date(memberData.birthdate) : null,
       }),
-      ...(memberData.age !== undefined && { age: memberData.age || null }),
+      ...(memberData.age !== undefined && {
+        age: memberData.age ? parseInt(String(memberData.age), 10) : null,
+      }),
       ...(memberData.ageBracket !== undefined && { ageBracket: memberData.ageBracket || null }),
       lastInteraction: new Date(),
     },
@@ -139,7 +141,6 @@ export async function updateMember(
   revalidatePath("/growth-tracker");
   return { success: true, member };
 }
-
 export async function deleteMember(id: string) {
   await requireAuth();
 

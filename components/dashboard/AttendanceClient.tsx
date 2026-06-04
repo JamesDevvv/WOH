@@ -34,11 +34,13 @@ import {
   Eye,
   ClipboardList,
   Pencil,
+  QrCode,
 } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { createMember } from "@/lib/actions/members";
 import { getAttendanceForDate, updateAttendance } from "@/lib/actions/attendance";
+import { QRCodeDialog } from "@/components/dashboard/QRCodeDialog";
 
 const SERVICE_BADGE: Record<string, { bg: string; text: string }> = {
   "Main Service":    { bg: "bg-blue-100",   text: "text-blue-700"   },
@@ -139,6 +141,9 @@ export function AttendanceClient({
   const [isEditingDetail, setIsEditingDetail] = useState(false);
   const [editingIds, setEditingIds] = useState<Set<string>>(new Set());
   const [editSavePending, startEditSaveTransition] = useTransition();
+
+  // QR dialog
+  const [qrSession, setQrSession] = useState<Session | null>(null);
 
   // â”€â”€ Save â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [savePending, startSaveTransition] = useTransition();
@@ -453,6 +458,15 @@ export function AttendanceClient({
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => setQrSession(s)}
+                        className="shrink-0 gap-1.5"
+                      >
+                        <QrCode className="h-3.5 w-3.5" />
+                        QR
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => openDetail(s)}
                         className="shrink-0 gap-1.5"
                       >
@@ -466,6 +480,16 @@ export function AttendanceClient({
             )}
           </CardContent>
         </Card>
+
+        {/* QR Code Dialog */}
+        {qrSession && (
+          <QRCodeDialog
+            open={!!qrSession}
+            onOpenChange={(open) => { if (!open) setQrSession(null); }}
+            date={qrSession.date}
+            serviceType={qrSession.serviceType}
+          />
+        )}
 
         {/* New Session Dialog */}
         <Dialog open={setupOpen} onOpenChange={setSetupOpen}>
@@ -930,14 +954,25 @@ export function AttendanceClient({
                   </Button>
                 </>
               ) : (
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditingDetail(true)}
-                  className="gap-1.5"
-                >
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setQrSession(detailSession)}
+                    className="gap-1.5"
+                  >
+                    <QrCode className="h-4 w-4" />
+                    QR Code
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditingDetail(true)}
+                    className="gap-1.5"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -1154,6 +1189,16 @@ export function AttendanceClient({
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* QR Code Dialog (detail view) */}
+        {qrSession && (
+          <QRCodeDialog
+            open={!!qrSession}
+            onOpenChange={(open) => { if (!open) setQrSession(null); }}
+            date={qrSession.date}
+            serviceType={qrSession.serviceType}
+          />
         )}
       </div>
     );

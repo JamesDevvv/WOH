@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Trash2, Pencil, ImageIcon, Loader2 } from "lucide-react";
+import { Plus, Trash2, Pencil, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -10,7 +10,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import Image from "next/image";
+import { Loader2 } from "lucide-react";
 
 interface GalleryItem {
   id: string;
@@ -48,6 +50,8 @@ export function GalleryCMS({ initialGallery }: { initialGallery: GalleryItem[] }
       try {
         const method = editing ? "PATCH" : "POST";
         const url = editing ? `/api/cms/gallery/${editing.id}` : "/api/cms/gallery";
+
+        // If editing and imageUrl changed, old file is already deleted by ImageUpload
         const res = await fetch(url, {
           method,
           headers: { "Content-Type": "application/json" },
@@ -63,18 +67,30 @@ export function GalleryCMS({ initialGallery }: { initialGallery: GalleryItem[] }
           toast({ title: "Photo added" });
         }
         setOpen(false);
-      } catch { toast({ title: "Error saving photo", variant: "destructive" } as Parameters<typeof toast>[0]); }
+      } catch {
+        toast({ title: "Error saving photo", variant: "destructive" } as Parameters<typeof toast>[0]);
+      }
     });
   }
 
-  function handleDelete(id: string) {
+  function handleDelete(item: GalleryItem) {
     if (!confirm("Delete this photo?")) return;
     startTransition(async () => {
       try {
-        await fetch(`/api/cms/gallery/${id}`, { method: "DELETE" });
-        setGallery((p) => p.filter((g) => g.id !== id));
+        await fetch(`/api/cms/gallery/${item.id}`, { method: "DELETE" });
+        // Delete the file from disk
+        if (item.imageUrl?.startsWith("/uploads/")) {
+          await fetch("/api/upload", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filePath: item.imageUrl }),
+          });
+        }
+        setGallery((p) => p.filter((g) => g.id !== item.id));
         toast({ title: "Photo deleted" });
-      } catch { toast({ title: "Error", variant: "destructive" } as Parameters<typeof toast>[0]); }
+      } catch {
+        toast({ title: "Error", variant: "destructive" } as Parameters<typeof toast>[0]);
+      }
     });
   }
 
@@ -92,7 +108,7 @@ export function GalleryCMS({ initialGallery }: { initialGallery: GalleryItem[] }
           {gallery.map((g) => (
             <div key={g.id} className="relative group rounded-2xl overflow-hidden bg-slate-100 aspect-square">
               {g.imageUrl ? (
-                <Image src={g.imageUrl} alt={g.caption ?? "Gallery"} fill className="object-cover" />
+                <Image src={g.imageUrl} alt={g.caption ?? "Gallery"} fill className="object-cover" unoptimized />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <ImageIcon className="h-8 w-8 text-slate-300" />
@@ -101,17 +117,10 @@ export function GalleryCMS({ initialGallery }: { initialGallery: GalleryItem[] }
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
                 <p className="text-white text-xs text-center line-clamp-2">{g.caption ?? g.category}</p>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => openEdit(g)}
-                    className="p-1.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
-                  >
+                  <button onClick={() => openEdit(g)} className="p-1.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600">
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
-                  <button
-                    onClick={() => handleDelete(g.id)}
-                    className="p-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600"
-                    disabled={isPending}
-                  >
+                  <button onClick={() => handleDelete(g)} className="p-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600" disabled={isPending}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -126,12 +135,22 @@ export function GalleryCMS({ initialGallery }: { initialGallery: GalleryItem[] }
           <DialogHeader><DialogTitle>{editing ? "Edit Photo" : "Add Photo"}</DialogTitle></DialogHeader>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Image URL *</Label>
-              <Input value={form.imageUrl} onChange={(e) => setForm((p) => ({ ...p, imageUrl: e.target.value }))} placeholder="https://res.cloudinary.com/..." required />
+              <Label>Photo *</Label>
+              <ImageUpload
+                value={form.imageUrl}
+                onChange={(url) => setForm((p) => ({ ...p, imageUrl: url }))}
+                aspectRatio="square"
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label>Caption</Label><Input value={form.caption} onChange={(e) => setForm((p) => ({ ...p, caption: e.target.value }))} /></div>
-              <div className="space-y-1.5"><Label>Category</Label><Input value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} /></div>
+              <div className="space-y-1.5">
+                <Label>Caption</Label>
+                <Input value={form.caption} onChange={(e) => setForm((p) => ({ ...p, caption: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Category</Label>
+                <Input value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Display Order</Label>
@@ -139,7 +158,7 @@ export function GalleryCMS({ initialGallery }: { initialGallery: GalleryItem[] }
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={isPending}>
+              <Button type="submit" disabled={isPending || !form.imageUrl}>
                 {isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : editing ? "Save Changes" : "Add Photo"}
               </Button>
             </DialogFooter>

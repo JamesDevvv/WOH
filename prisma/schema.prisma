@@ -270,6 +270,26 @@ model Testimonial {
   @@map("testimonials")
 }
 
+model SiteSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+model AttendanceQR {
+  id          String    @id @default(cuid())
+  token       String    @unique @default(cuid())
+  date        String
+  serviceType String
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("attendance_qr")
+}
+
 model Training {
   id         String     @id @default(cuid())
   memberId   String

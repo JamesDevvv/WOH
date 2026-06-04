@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, Calendar, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -95,13 +96,16 @@ export function EventsCMS({ initialEvents }: { initialEvents: Event[] }) {
     });
   }
 
-  function handleDelete(id: string) {
+  function handleDelete(ev: Event) {
     if (!confirm("Delete this event?")) return;
     startTransition(async () => {
       try {
-        const res = await fetch(`/api/cms/events/${id}`, { method: "DELETE" });
+        const res = await fetch(`/api/cms/events/${ev.id}`, { method: "DELETE" });
         if (!res.ok) throw new Error("Failed");
-        setEvents((prev) => prev.filter((e) => e.id !== id));
+        if (ev.image?.startsWith("/uploads/")) {
+          await fetch("/api/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filePath: ev.image }) });
+        }
+        setEvents((prev) => prev.filter((e) => e.id !== ev.id));
         toast({ title: "Event deleted" });
       } catch {
         toast({ title: "Error deleting event", variant: "destructive" } as Parameters<typeof toast>[0]);
@@ -144,7 +148,7 @@ export function EventsCMS({ initialEvents }: { initialEvents: Event[] }) {
                   <Button
                     variant="ghost" size="icon"
                     className="h-8 w-8 text-red-500 hover:bg-red-50"
-                    onClick={() => handleDelete(ev.id)}
+                    onClick={() => handleDelete(ev)}
                     disabled={isPending}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -181,8 +185,8 @@ export function EventsCMS({ initialEvents }: { initialEvents: Event[] }) {
               <Input value={form.location} onChange={(e) => setF("location", e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label>Image URL</Label>
-              <Input value={form.image} onChange={(e) => setF("image", e.target.value)} placeholder="https://res.cloudinary.com/..." />
+              <Label>Event Photo</Label>
+              <ImageUpload value={form.image} onChange={(url) => setF("image", url)} aspectRatio="video" />
             </div>
             <div className="space-y-1.5">
               <Label>Description</Label>

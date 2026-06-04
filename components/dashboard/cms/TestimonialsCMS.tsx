@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, Loader2, Quote } from "lucide-react";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -48,12 +49,15 @@ export function TestimonialsCMS({ initialTestimonials }: { initialTestimonials: 
     });
   }
 
-  function handleDelete(id: string) {
+  function handleDelete(item: Testimonial) {
     if (!confirm("Delete this testimonial?")) return;
     startTransition(async () => {
       try {
-        await fetch(`/api/cms/testimonials/${id}`, { method: "DELETE" });
-        setItems((p) => p.filter((t) => t.id !== id));
+        await fetch(`/api/cms/testimonials/${item.id}`, { method: "DELETE" });
+        if (item.image?.startsWith("/uploads/")) {
+          await fetch("/api/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filePath: item.image }) });
+        }
+        setItems((p) => p.filter((t) => t.id !== item.id));
         toast({ title: "Deleted" });
       } catch { toast({ title: "Error", variant: "destructive" } as Parameters<typeof toast>[0]); }
     });
@@ -81,7 +85,7 @@ export function TestimonialsCMS({ initialTestimonials }: { initialTestimonials: 
                   <div className="flex items-center gap-1">
                     <Badge variant={t.published ? "success" : "secondary"} className="text-xs">{t.published ? "Live" : "Hidden"}</Badge>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}><Pencil className="h-3 w-3" /></Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:bg-red-50" onClick={() => handleDelete(t.id)} disabled={isPending}><Trash2 className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:bg-red-50" onClick={() => handleDelete(t)} disabled={isPending}><Trash2 className="h-3 w-3" /></Button>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-3">&ldquo;{t.message}&rdquo;</p>
@@ -97,7 +101,10 @@ export function TestimonialsCMS({ initialTestimonials }: { initialTestimonials: 
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-1.5"><Label>Name *</Label><Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} required /></div>
             <div className="space-y-1.5"><Label>Message *</Label><Textarea value={form.message} onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))} rows={4} required /></div>
-            <div className="space-y-1.5"><Label>Photo URL</Label><Input value={form.image} onChange={(e) => setForm((p) => ({ ...p, image: e.target.value }))} placeholder="https://..." /></div>
+            <div className="space-y-1.5">
+              <Label>Photo</Label>
+              <ImageUpload value={form.image} onChange={(url) => setForm((p) => ({ ...p, image: url }))} aspectRatio="square" />
+            </div>
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => setForm((p) => ({ ...p, published: !p.published }))} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.published ? "bg-blue-600" : "bg-slate-200"}`}>
                 <span className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${form.published ? "translate-x-6" : "translate-x-1"}`} />

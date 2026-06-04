@@ -1,5 +1,7 @@
 import Image from "next/image";
 
+interface Props { heroBg?: string; }
+
 const pillars = [
   {
     color: "bg-amber-400",
@@ -21,7 +23,7 @@ const pillars = [
   },
 ];
 
-export function AboutSection() {
+export function AboutSection({ heroBg }: Props) {
   return (
     <section id="about" className="py-20 bg-[#F6FAFD]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -45,11 +47,12 @@ export function AboutSection() {
           {/* Right: photo */}
           <div className="relative h-80 lg:h-96 rounded-2xl overflow-hidden shadow-lg">
             <Image
-              src="/images/about-congregation.jpg"
+              src={heroBg ?? "/images/about-congregation.jpg"}
               alt="Word of Hope congregation"
               fill
               className="object-cover"
               priority
+              unoptimized={!!(heroBg && heroBg.startsWith("http"))}
             />
             {/* fallback gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-[#0A1931]/70 to-[#1A3D63]/50 flex items-center justify-center">

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 async function getPublicData() {
-  const [activities, events, gallery, testimonials] = await Promise.all([
+  const [activities, events, gallery, testimonials, heroBgRaw] = await Promise.all([
     prisma.activity.findMany({ orderBy: { order: "asc" }, take: 6 }),
     prisma.event.findMany({
       where: { published: true, date: { gte: new Date() } },
@@ -30,19 +30,21 @@ async function getPublicData() {
       orderBy: { createdAt: "desc" },
       take: 4,
     }),
+    prisma.$queryRaw<{ value: string }[]>`SELECT value FROM site_settings WHERE key = 'hero_bg' LIMIT 1`.catch(() => []),
   ]);
-  return { activities, events, gallery, testimonials };
+  const heroBg = (heroBgRaw as { value: string }[])[0]?.value ?? "/images/hero-bg.jpg";
+  return { activities, events, gallery, testimonials, heroBg };
 }
 
 export default async function HomePage() {
-  const { activities, events, gallery, testimonials } = await getPublicData();
+  const { activities, events, gallery, testimonials, heroBg } = await getPublicData();
 
   return (
     <main className="flex flex-col min-h-screen">
       <PublicNav />
-      <HeroSection />
+      <HeroSection heroBg={heroBg} />
       <ActivitiesSection activities={activities} />
-      <AboutSection />
+      <AboutSection heroBg={heroBg} />
       <EventsSection events={events} />
       <GallerySection gallery={gallery} />
       <TestimonialsSection testimonials={testimonials} />

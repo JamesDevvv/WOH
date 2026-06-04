@@ -2,15 +2,27 @@ import Link from "next/link";
 import Image from "next/image";
 import { Navigation } from "lucide-react";
 
-export function HeroSection() {
+interface Props {
+  heroBg: string;
+}
+
+export function HeroSection({ heroBg }: Props) {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
-      {/* Background photo with dark overlay */}
-      <div className="absolute inset-0 bg-[url('/images/hero-bg.jpg')] bg-cover bg-center" />
+    <section className="relative h-screen max-h-screen flex items-center justify-center overflow-hidden pt-14">
+      {/* Background photo */}
+      <div className="absolute inset-0">
+        <Image
+          src={heroBg}
+          alt="Hero background"
+          fill
+          className="object-cover object-center"
+          priority
+          unoptimized={heroBg.startsWith("http")}
+        />
+      </div>
       <div className="absolute inset-0 bg-[#0A1931]/70" />
 
       <div className="relative z-10 text-center text-white px-4 max-w-2xl mx-auto flex flex-col items-center">
-        {/* Church seal / logo */}
         <div className="w-24 h-24 rounded-full overflow-hidden shadow-2xl mb-8 ring-4 ring-[#B3CFE5]/30">
           <Image src="/images/WOH-logo.png" alt="Word of Hope logo" width={96} height={96} className="object-cover w-full h-full" />
         </div>
@@ -42,4 +54,3 @@ export function HeroSection() {
     </section>
   );
 }
-

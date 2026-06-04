@@ -17,10 +17,12 @@ import {
   X,
   BookOpen,
   ShieldCheck,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import Image from "next/image";
+import { signOut } from "next-auth/react";
 import type { UserRole } from "@prisma/client";
 
 const navItems = [
@@ -120,14 +122,26 @@ export function DashboardSidebar({ user, allowedModules }: Props) {
           })}
         </nav>
 
-        {/* Role Badge */}
-        {!collapsed && (
-          <div className="px-4 pb-2">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-[#1A3D63] text-xs font-medium">
-              {user.role}
-            </span>
-          </div>
-        )}
+        {/* Role Badge + Logout */}
+        <div className={cn("px-2 pb-2 space-y-1", collapsed && "px-2")}>
+          {!collapsed && (
+            <div className="px-2 pb-1">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-[#1A3D63] text-xs font-medium">
+                {user.role}
+              </span>
+            </div>
+          )}
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors w-full text-red-500 hover:bg-red-50",
+            )}
+            title={collapsed ? "Logout" : undefined}
+          >
+            <LogOut className="h-5 w-5 shrink-0" />
+            {!collapsed && <span>Logout</span>}
+          </button>
+        </div>
 
         {/* Collapse Toggle */}
         <button
@@ -179,10 +193,19 @@ export function DashboardSidebar({ user, allowedModules }: Props) {
             <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
               {visibleItems.map((item) => <NavLink key={item.href} item={item} />)}
             </nav>
-            <div className="px-4 pb-4">
-              <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-[#1A3D63] text-xs font-medium">
-                {user.role}
-              </span>
+            <div className="px-2 pb-4 space-y-2">
+              <div className="px-2">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-[#1A3D63] text-xs font-medium">
+                  {user.role}
+                </span>
+              </div>
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors w-full text-red-500 hover:bg-red-50"
+              >
+                <LogOut className="h-5 w-5 shrink-0" />
+                <span>Logout</span>
+              </button>
             </div>
           </div>
         </div>
