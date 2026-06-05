@@ -5,14 +5,10 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     env_file: .env.production
-    environment:
-      POSTGRES_DB: word_of_hope
-      POSTGRES_USER: ${POSTGRES_USER:-woh}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-woh} -d word_of_hope"]
+      test: ["CMD-SHELL", "pg_isready -U woh -d word_of_hope"]
       interval: 10s
       timeout: 5s
       retries: 5
