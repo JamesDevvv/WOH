@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.production.example
+node_modules
+.next
+public/uploads/*
+*.md
+.vscode
+.turbo

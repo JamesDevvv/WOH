@@ -1,0 +1,511 @@
+================================================================
+   WORD OF HOPE — HOSTINGER VPS DEPLOYMENT GUIDE
+   Detailed Step-by-Step Tutorial
+================================================================
+
+OVERVIEW NG GAGAWIN:
+  1.  Kumuha ng server IP sa Hostinger Panel
+  2.  I-connect ang domain sa VPS
+  3.  SSH connect sa server
+  4.  I-install ang Docker + Docker Compose
+  5.  I-upload ang project
+  6.  I-setup ang environment variables
+  7.  I-build at i-start ang lahat ng services
+  8.  Kumuha ng free SSL certificate
+  9.  I-test ang website
+
+TOOLS NA KAILANGAN SA IYONG PC:
+  - Git Bash o Windows Terminal
+  - VS Code (para mag-edit ng files)
+  - WinSCP (optional, para mag-upload ng files)
+
+================================================================
+PART 1: HOSTINGER VPS SETUP
+================================================================
+
+STEP 1.1 — Bumili/I-check ang VPS Plan
+-----------------------------------------
+1. Login sa Hostinger: https://hpanel.hostinger.com
+2. Pumunta sa "VPS" section
+3. Pinakamababang plan na works: KVM 1 (1GB RAM, 20GB disk)
+4. Piliin ang OS: Ubuntu 22.04
+
+STEP 1.2 — Kumuha ng Server IP at Root Password
+-------------------------------------------------
+1. Sa Hostinger panel, i-click ang iyong VPS
+2. Makikita mo ang:
+   - IPv4 Address:  xxx.xxx.xxx.xxx  <-- ito ang SERVER IP
+   - Root password: (i-click ang "eye" icon para makita)
+3. I-copy ang SERVER IP at ROOT PASSWORD
+
+STEP 1.3 — I-setup ang SSH Access
+-----------------------------------
+Option A: Gamitin ang Hostinger Browser Terminal
+   - Sa VPS panel, i-click ang "Terminal" o "Browser SSH"
+   - Automatic na naka-connect, hindi na kailangan ng SSH client
+
+Option B: Gamitin ang Windows Terminal / Git Bash
+   Sa iyong PC, buksan ang terminal at type:
+   ssh root@YOUR_SERVER_IP
+   (I-type ang root password kapag tinanong)
+
+================================================================
+PART 2: POINT DOMAIN SA VPS (Hostinger DNS)
+================================================================
+
+STEP 2.1 — I-update ang DNS Records
+--------------------------------------
+1. Sa Hostinger panel, pumunta sa "Domains"
+2. I-click ang wordofhopesc.com
+3. I-click ang "DNS / Nameservers"
+4. Hanapin ang existing "A" record, o gumawa ng bago
+
+5. I-set/I-edit ang mga sumusunod:
+
+   Type    Name      Points to           TTL
+   ------  --------  ------------------  ------
+   A       @         YOUR_SERVER_IP      14400
+   A       www       YOUR_SERVER_IP      14400
+
+6. I-click "Save"
+
+STEP 2.2 — Hintayin ang DNS Propagation
+-----------------------------------------
+   - Karaniwang 5 minuto hanggang 1 oras
+   - Para i-check kung nag-propagate na:
+     Pumunta sa: https://dnschecker.org
+     I-type ang: wordofhopesc.com
+     Dapat makita ang iyong SERVER IP
+
+================================================================
+PART 3: CONNECT SA VPS AT I-UPDATE ANG SYSTEM
+================================================================
+
+STEP 3.1 — SSH Connect
+------------------------
+   Sa iyong PC terminal:
+   ssh root@YOUR_SERVER_IP
+
+   First time mag-connect, may lalabas na:
+   "Are you sure you want to continue connecting? (yes/no)"
+   Type: yes
+
+   I-enter ang root password (hindi magpapakita ng characters — normal)
+
+STEP 3.2 — I-update ang System
+--------------------------------
+   I-copy-paste ang commands na ito sa terminal:
+
+   apt update && apt upgrade -y
+
+   Hintayin hanggang matapos (5-10 minuto).
+   Kung may tanong na mag-lalabas (Keep local version? etc.),
+   press ENTER para default.
+
+STEP 3.3 — I-install ang mga Basic Tools
+------------------------------------------
+   apt install -y curl git nano wget ufw unzip
+
+================================================================
+PART 4: I-INSTALL ANG DOCKER AT DOCKER COMPOSE
+================================================================
+
+STEP 4.1 — I-install ang Docker
+---------------------------------
+   I-run ang official Docker install script:
+
+   curl -fsSL https://get.docker.com -o get-docker.sh
+   sh get-docker.sh
+
+   Hintayin hanggang matapos (2-5 minuto).
+
+STEP 4.2 — I-verify ang Docker
+--------------------------------
+   docker --version
+
+   Dapat makita ang: Docker version 26.x.x (o mas bago)
+
+STEP 4.3 — I-install ang Docker Compose Plugin
+------------------------------------------------
+   apt install -y docker-compose-plugin
+
+   I-verify:
+   docker compose version
+
+   Dapat makita ang: Docker Compose version v2.x.x
+
+STEP 4.4 — I-enable ang Docker on Boot
+----------------------------------------
+   systemctl enable docker
+   systemctl start docker
+
+STEP 4.5 — I-configure ang Firewall
+--------------------------------------
+   ufw allow OpenSSH
+   ufw allow 80/tcp
+   ufw allow 443/tcp
+   ufw --force enable
+
+   Para i-check:
+   ufw status
+
+   Dapat makita:
+   22/tcp (OpenSSH)  ALLOW
+   80/tcp            ALLOW
+   443/tcp           ALLOW
+
+================================================================
+PART 5: I-UPLOAD ANG PROJECT SA SERVER
+================================================================
+
+OPTION A: Gamit ang Git (PINAKA-MADALI)
+------------------------------------------
+   Kung naka-GitHub/GitLab ang project mo:
+
+   cd /home
+   git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git woh
+   cd woh
+
+   Pag walang GitHub, gamitin ang Option B.
+
+OPTION B: Gamit ang SCP (Direct Upload)
+-----------------------------------------
+   Sa iyong LOCAL PC (Windows Terminal o Git Bash):
+
+   scp -r "C:/Users/jeyms/Desktop/WOH" root@YOUR_SERVER_IP:/home/woh
+
+   Hintayin hanggang matapos ang upload.
+   Pagkatapos, bumalik sa VPS terminal:
+
+   cd /home/woh
+
+OPTION C: Gamit ang WinSCP (GUI — para hindi sanay sa terminal)
+----------------------------------------------------------------
+   1. I-download WinSCP: https://winscp.net
+   2. I-install at buksan
+   3. New Site:
+      Protocol: SFTP
+      Host name: YOUR_SERVER_IP
+      Port: 22
+      User name: root
+      Password: your root password
+   4. I-click "Login"
+   5. Left side: hanapin ang "C:\Users\jeyms\Desktop\WOH"
+   6. Right side: pumunta sa /home/
+   7. I-drag yung WOH folder papunta sa /home/
+   8. I-rename ang folder sa server: i-right-click → Rename → "woh"
+
+================================================================
+PART 6: I-SETUP ANG ENVIRONMENT VARIABLES
+================================================================
+
+STEP 6.1 — Gumawa ng .env.production File
+-------------------------------------------
+   cd /home/woh
+   cp .env.production.example .env.production
+   nano .env.production
+
+STEP 6.2 — Fill in Lahat ng Values
+-------------------------------------
+   Makikita mo ang .env.production.example bilang template.
+   I-edit ang bawat value:
+
+   ---------------------------------------------------------
+   POSTGRES_USER=woh
+   (huwag baguhin ito)
+
+   POSTGRES_PASSWORD=PutYourStrongPasswordHere123!
+   (gumawa ng strong password — letters + numbers + symbols)
+
+   DATABASE_URL=postgresql://woh:PutYourStrongPasswordHere123!@postgres:5432/word_of_hope
+   (PALITAN ang "PutYourStrongPasswordHere123!" ng SAME password sa itaas)
+
+   NEXTAUTH_URL=https://wordofhopesc.com
+   (exactly ganito, may https)
+
+   AUTH_URL=https://wordofhopesc.com
+   (same)
+
+   NEXTAUTH_SECRET=
+   (bumuo ng random key — tingnan ang Step 6.3 sa ibaba)
+
+   AUTH_SECRET=
+   (same value ng NEXTAUTH_SECRET)
+
+   GOOGLE_CLIENT_ID=
+   (mula sa Google Cloud Console — Step 6.4)
+
+   GOOGLE_CLIENT_SECRET=
+   (mula sa Google Cloud Console — Step 6.4)
+
+   NEXT_PUBLIC_APP_URL=https://wordofhopesc.com
+   ---------------------------------------------------------
+
+STEP 6.3 — Gumawa ng NEXTAUTH_SECRET
+---------------------------------------
+   Sa VPS terminal, i-run:
+
+   openssl rand -base64 32
+
+   Makakakuha ka ng random string gaya nito:
+   K8mZpX3vL9qR2wN7yT4uE6hF1cB5dA0s=
+
+   I-copy at i-paste sa .env.production:
+   NEXTAUTH_SECRET=K8mZpX3vL9qR2wN7yT4uE6hF1cB5dA0s=
+   AUTH_SECRET=K8mZpX3vL9qR2wN7yT4uE6hF1cB5dA0s=
+
+STEP 6.4 — I-update ang Google OAuth para sa Production
+---------------------------------------------------------
+   1. Pumunta sa: https://console.cloud.google.com
+   2. I-click ang iyong project
+   3. APIs & Services → Credentials
+   4. I-click ang iyong OAuth 2.0 Client ID
+   5. Sa "Authorized JavaScript origins", I-ADD:
+      https://wordofhopesc.com
+   6. Sa "Authorized redirect URIs", I-ADD:
+      https://wordofhopesc.com/api/auth/callback/google
+   7. I-click "SAVE"
+   8. Kopyahin ang Client ID at Client Secret
+   9. I-paste sa .env.production:
+      GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET=GOCSPX-xxxxx
+
+STEP 6.5 — I-save ang .env.production
+----------------------------------------
+   Kapag natapos na mag-edit:
+   Ctrl+X  →  Y  →  Enter
+
+   Para i-verify ang laman:
+   cat .env.production
+
+================================================================
+PART 7: UNANG STARTUP — BUILD ANG APP
+================================================================
+
+STEP 7.1 — I-start ang PostgreSQL at App
+------------------------------------------
+   cd /home/woh
+   docker compose up -d postgres app nginx
+
+   Ito ay mag-do-download ng Docker images at mag-bu-build ng app.
+   UNANG BUILD: 5-15 minuto (depende sa server speed).
+
+STEP 7.2 — Panoorin ang Build Progress
+----------------------------------------
+   docker compose logs -f app
+
+   Hintayin ang mga mensaheng ito:
+   ✓ "Running database migrations..."
+   ✓ "Starting Next.js server..."
+   ✓ "Ready in Xms"
+
+   Para lumabas sa logs view: Ctrl+C
+
+STEP 7.3 — I-check kung Tumatakbo
+------------------------------------
+   docker compose ps
+
+   Dapat makita ang "Up" sa lahat ng services:
+   NAME         STATUS
+   woh-app-1    Up (healthy)
+   woh-nginx-1  Up
+   woh-postgres-1  Up (healthy)
+
+STEP 7.4 — Quick Test (HTTP muna, bago SSL)
+--------------------------------------------
+   I-try i-access sa browser:
+   http://YOUR_SERVER_IP:3000
+
+   Kung lumabas ang website — ✅ gumagana ang app!
+   (Normal pa rin na may "Not Secure" — SSL setup pa lang susunod)
+
+================================================================
+PART 8: I-SETUP ANG FREE SSL (Let's Encrypt)
+================================================================
+
+IMPORTANT: Dapat na-propagate na ang DNS (Step 2.2)
+at dapat naka-point na ang wordofhopesc.com sa server.
+
+STEP 8.1 — Kumuha ng SSL Certificate
+---------------------------------------
+   docker compose run --rm certbot
+
+   Kapag successful, makikita mo:
+   "Congratulations! Your certificate and chain have been saved at:
+    /etc/letsencrypt/live/wordofhopesc.com/fullchain.pem"
+
+   Kapag may error na "DNS problem":
+   - Baka hindi pa nag-propagate ang DNS
+   - Hintayin pa ng 30 minuto, tapos subukan ulit
+
+STEP 8.2 — I-reload ang Nginx para Gamitin ang SSL
+----------------------------------------------------
+   docker compose exec nginx nginx -s reload
+
+STEP 8.3 — I-test ang HTTPS
+------------------------------
+   Buksan sa browser:
+   https://wordofhopesc.com
+
+   Dapat may green padlock ✅ at lumalabas ang website!
+
+STEP 8.4 — I-setup ang Auto-Renewal ng SSL
+--------------------------------------------
+   SSL certificates ay nag-e-expire every 90 days.
+   I-setup ang automatic renewal:
+
+   crontab -e
+
+   Piliin ang editor (type "1" para sa nano, Enter)
+
+   I-add ang linyang ito sa pinakadulo:
+   0 3 * * * cd /home/woh && docker compose run --rm certbot renew --quiet && docker compose exec nginx nginx -s reload
+
+   I-save: Ctrl+X → Y → Enter
+
+================================================================
+PART 9: I-VERIFY NA GUMAGANA LAHAT
+================================================================
+
+STEP 9.1 — Checklist
+----------------------
+   [ ] https://wordofhopesc.com  → lumalabas ang website
+   [ ] https://wordofhopesc.com/login  → may Google Sign In button
+   [ ] I-click Sign In with Google → nagtatanong ng Google account
+   [ ] Makapag-login bilang Admin
+   [ ] https://wordofhopesc.com/dashboard  → nakita ang dashboard
+
+STEP 9.2 — I-test ang CMS Upload
+----------------------------------
+   1. Login bilang Admin
+   2. Pumunta sa CMS → Website tab
+   3. Subukan mag-upload ng photo
+   4. I-click "Save Background"
+   5. Tingnan ang public website → dapat nagbago ang background
+
+================================================================
+PART 10: MAINTAINING YOUR SERVER
+================================================================
+
+--- I-update ang app kapag may bagong code ---
+   cd /home/woh
+   git pull                              (kung gumagamit ng Git)
+   docker compose up -d --build app      (i-rebuild at i-restart)
+
+--- I-restart ang app (kapag may error) ---
+   docker compose restart app
+
+--- I-stop ang lahat ---
+   docker compose down
+
+--- I-start ulit ang lahat ---
+   docker compose up -d
+
+--- Tingnan ang logs ng app ---
+   docker compose logs -f app
+
+--- Tingnan ang logs ng nginx ---
+   docker compose logs -f nginx
+
+--- I-backup ang database ---
+   docker compose exec postgres pg_dump -U woh word_of_hope > backup_$(date +%Y%m%d).sql
+
+--- Free up disk space ---
+   docker system prune -f
+
+--- Check disk usage ---
+   df -h
+
+--- Check memory usage ---
+   free -h
+
+================================================================
+TROUBLESHOOTING — COMMON PROBLEMS
+================================================================
+
+PROBLEMA: Website hindi lumalabas sa browser
+-------------------------------------------------
+   1. I-check kung running ang containers:
+      docker compose ps
+   2. I-check ang nginx logs:
+      docker compose logs nginx
+   3. I-check kung nakabukas ang firewall:
+      ufw status
+   4. I-try i-access gamit ang IP:
+      http://YOUR_SERVER_IP
+
+PROBLEMA: "502 Bad Gateway" sa browser
+----------------------------------------
+   Ibig sabihin: nakastart ang nginx pero hindi mareach ang app.
+   1. docker compose logs app   (tingnan ang error)
+   2. docker compose restart app
+
+PROBLEMA: Google Login hindi gumagana
+----------------------------------------
+   1. Siguraduhing naidagdag sa Google Console:
+      https://wordofhopesc.com/api/auth/callback/google
+   2. I-check ang .env.production:
+      NEXTAUTH_URL=https://wordofhopesc.com  (may https, walang /)
+   3. I-restart: docker compose restart app
+
+PROBLEMA: "SSL certificate not found" error sa nginx
+------------------------------------------------------
+   Ibig sabihin: hindi pa naka-get ang SSL certificate.
+   1. I-run ulit ang certbot:
+      docker compose run --rm certbot
+   2. Kung may "too many certificates" error, hintayin ng 1 oras
+
+PROBLEMA: Database connection error
+--------------------------------------
+   1. I-check kung same ang password sa DATABASE_URL at POSTGRES_PASSWORD
+   2. docker compose restart postgres app
+
+PROBLEMA: Uploads/photos hindi nase-save
+-----------------------------------------
+   1. I-check ang uploads volume:
+      docker volume ls  (dapat may woh_uploads)
+   2. I-check permissions:
+      docker compose exec app ls -la /app/public/uploads
+
+PROBLEMA: "out of memory" error sa build
+-----------------------------------------
+   Kung mababa ang RAM ng server (512MB), idagdag ng swap:
+   fallocate -l 2G /swapfile
+   chmod 600 /swapfile
+   mkswap /swapfile
+   swapon /swapfile
+   echo '/swapfile none swap sw 0 0' >> /etc/fstab
+
+================================================================
+QUICK REFERENCE — LAHAT NG COMMANDS
+================================================================
+
+I-copy-paste ang block na ito sa notes mo para madaling hanapin:
+
+CONNECT:
+   ssh root@YOUR_SERVER_IP
+
+START/STOP:
+   docker compose up -d           (start lahat)
+   docker compose down            (stop lahat)
+   docker compose restart app     (restart app lang)
+
+LOGS:
+   docker compose logs -f app     (watch app logs)
+   docker compose logs -f nginx   (watch nginx logs)
+   docker compose ps              (list running containers)
+
+UPDATE:
+   git pull && docker compose up -d --build app
+
+BACKUP:
+   docker compose exec postgres pg_dump -U woh word_of_hope > backup.sql
+
+SSL RENEW (manual):
+   docker compose run --rm certbot renew
+   docker compose exec nginx nginx -s reload
+
+================================================================
+   TAPOS NA! Ang website mo ay live na sa:
+   https://wordofhopesc.com
+================================================================

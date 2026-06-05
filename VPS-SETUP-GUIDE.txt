@@ -1,0 +1,328 @@
+================================================================
+   WORD OF HOPE STA. CLARA — VPS DEPLOYMENT GUIDE
+   Domain: wordofhopesc.com
+================================================================
+
+REQUIREMENTS:
+  - Ubuntu 22.04 LTS VPS (minimum 1GB RAM, 20GB disk)
+  - A domain: wordofhopesc.com
+  - SSH access to your server
+  - Google OAuth credentials
+
+================================================================
+STEP 1: POINT YOUR DOMAIN TO YOUR VPS
+================================================================
+
+1. Login to your domain registrar (Namecheap, GoDaddy, etc.)
+
+2. Go to DNS settings and add these records:
+
+   Type    Name    Value               TTL
+   ------  ------  ------------------  -----
+   A       @       YOUR_SERVER_IP      Auto
+   A       www     YOUR_SERVER_IP      Auto
+
+3. Wait 5-30 minutes for DNS to propagate.
+
+4. To check if it's working, run this on your local PC:
+   ping wordofhopesc.com
+   (it should reply from your server IP)
+
+================================================================
+STEP 2: CONNECT TO YOUR VPS VIA SSH
+================================================================
+
+On your local PC, open terminal/PowerShell and run:
+
+   ssh root@YOUR_SERVER_IP
+
+Or if you have a username:
+
+   ssh ubuntu@YOUR_SERVER_IP
+
+================================================================
+STEP 3: UPDATE UBUNTU & INSTALL DOCKER
+================================================================
+
+Run these commands one by one on your VPS:
+
+--- Update system ---
+   apt update && apt upgrade -y
+
+--- Install required packages ---
+   apt install -y curl git nano ufw
+
+--- Install Docker ---
+   curl -fsSL https://get.docker.com -o get-docker.sh
+   sh get-docker.sh
+
+--- Install Docker Compose plugin ---
+   apt install -y docker-compose-plugin
+
+--- Verify Docker is installed ---
+   docker --version
+   docker compose version
+
+   (You should see version numbers, e.g. Docker 26.x, Compose v2.x)
+
+--- Enable Docker to start on boot ---
+   systemctl enable docker
+   systemctl start docker
+
+================================================================
+STEP 4: CONFIGURE FIREWALL
+================================================================
+
+   ufw allow OpenSSH
+   ufw allow 80
+   ufw allow 443
+   ufw enable
+
+   (Type "y" when prompted)
+
+================================================================
+STEP 5: UPLOAD YOUR PROJECT TO THE SERVER
+================================================================
+
+OPTION A — Using Git (recommended):
+
+   On your VPS:
+   cd /home
+   git clone YOUR_REPO_URL woh
+   cd woh
+
+OPTION B — Using SCP from your local PC:
+
+   On your LOCAL PC (PowerShell):
+   scp -r "C:\Users\jeyms\Desktop\WOH" root@YOUR_SERVER_IP:/home/woh
+
+   Then on VPS:
+   cd /home/woh
+
+================================================================
+STEP 6: SET UP GOOGLE OAUTH FOR PRODUCTION
+================================================================
+
+1. Go to: https://console.cloud.google.com
+2. Select your project → APIs & Services → Credentials
+3. Click your OAuth 2.0 Client ID
+4. Under "Authorized redirect URIs", ADD:
+   https://wordofhopesc.com/api/auth/callback/google
+5. Under "Authorized JavaScript origins", ADD:
+   https://wordofhopesc.com
+6. Click SAVE
+
+================================================================
+STEP 7: CREATE PRODUCTION ENVIRONMENT FILE
+================================================================
+
+On your VPS, inside the project folder:
+
+   cd /home/woh
+   cp .env.production.example .env.production
+   nano .env.production
+
+Fill in ALL values. Here is what each means:
+
+-----------------------------------------------------------------
+POSTGRES_USER=woh
+   (username for the database — keep as "woh")
+
+POSTGRES_PASSWORD=CHANGE_THIS_STRONG_PASSWORD
+   (create a strong password, e.g. MyStr0ng!Pass2026)
+   IMPORTANT: Use the SAME password in DATABASE_URL below.
+
+DATABASE_URL=postgresql://woh:CHANGE_THIS_STRONG_PASSWORD@postgres:5432/word_of_hope
+   (replace CHANGE_THIS_STRONG_PASSWORD with your password above)
+
+NEXTAUTH_URL=https://wordofhopesc.com
+AUTH_URL=https://wordofhopesc.com
+
+NEXTAUTH_SECRET=
+   (generate one by running: openssl rand -base64 32)
+   (copy the output and paste it here)
+
+AUTH_SECRET=
+   (same value as NEXTAUTH_SECRET)
+
+GOOGLE_CLIENT_ID=
+   (from Google Cloud Console → Credentials → your OAuth client)
+
+GOOGLE_CLIENT_SECRET=
+   (from Google Cloud Console → Credentials → your OAuth client)
+
+NEXT_PUBLIC_APP_URL=https://wordofhopesc.com
+-----------------------------------------------------------------
+
+To generate NEXTAUTH_SECRET, run in the VPS terminal:
+   openssl rand -base64 32
+
+Copy the output and paste it into .env.production
+
+Save the file:
+   Press Ctrl+X, then Y, then Enter
+
+================================================================
+STEP 8: BUILD AND START (HTTP FIRST — NO SSL YET)
+================================================================
+
+   cd /home/woh
+
+Start the database and app first (needed for SSL verification):
+
+   docker compose up -d postgres app nginx
+
+Wait 1-2 minutes for the build to complete.
+
+Check if it's running:
+   docker compose ps
+
+You should see all services with "Up" status.
+
+Check app logs:
+   docker compose logs app
+
+Wait until you see:
+   "Running database migrations..."
+   "Starting Next.js server..."
+
+================================================================
+STEP 9: GET FREE SSL CERTIFICATE (Let's Encrypt)
+================================================================
+
+IMPORTANT: DNS must already point to your server (Step 1).
+
+Run certbot to get the SSL certificate:
+
+   docker compose run --rm certbot
+
+You should see:
+   "Successfully received certificate"
+   "Certificate is saved at: /etc/letsencrypt/live/wordofhopesc.com/"
+
+Then reload nginx to use the new certificate:
+
+   docker compose exec nginx nginx -s reload
+
+================================================================
+STEP 10: SET UP AUTO SSL RENEWAL
+================================================================
+
+SSL certificates expire every 90 days. Set up auto-renewal:
+
+   crontab -e
+
+   (Choose nano editor — press 1)
+
+Add this line at the bottom:
+   0 3 * * * cd /home/woh && docker compose run --rm certbot renew && docker compose exec nginx nginx -s reload
+
+Save: Ctrl+X → Y → Enter
+
+================================================================
+STEP 11: TEST YOUR WEBSITE
+================================================================
+
+Open your browser and visit:
+   https://wordofhopesc.com
+
+You should see the Word of Hope website with a green padlock.
+
+Test login:
+   https://wordofhopesc.com/login
+   (Click Sign in with Google)
+
+================================================================
+STEP 12: DONE! USEFUL COMMANDS FOR LATER
+================================================================
+
+--- View running containers ---
+   docker compose ps
+
+--- View app logs (live) ---
+   docker compose logs -f app
+
+--- Restart the app ---
+   docker compose restart app
+
+--- Stop everything ---
+   docker compose down
+
+--- Start everything ---
+   docker compose up -d
+
+--- Update the app (after pushing new code) ---
+   git pull
+   docker compose up -d --build app
+
+--- Access the database directly ---
+   docker compose exec postgres psql -U woh -d word_of_hope
+
+--- Backup the database ---
+   docker compose exec postgres pg_dump -U woh word_of_hope > backup.sql
+
+--- Restore database from backup ---
+   cat backup.sql | docker compose exec -T postgres psql -U woh word_of_hope
+
+================================================================
+TROUBLESHOOTING
+================================================================
+
+PROBLEM: Website not loading
+  - Check if nginx is running: docker compose ps
+  - Check nginx logs: docker compose logs nginx
+  - Make sure port 80 and 443 are open: ufw status
+
+PROBLEM: Login not working (Google OAuth error)
+  - Make sure you added the correct redirect URI in Google Console
+  - Check that NEXTAUTH_URL=https://wordofhopesc.com in .env.production
+  - Restart app: docker compose restart app
+
+PROBLEM: SSL certificate error
+  - Make sure your domain DNS is pointing to your server
+  - Run: dig wordofhopesc.com (should show your server IP)
+  - Try again: docker compose run --rm certbot
+
+PROBLEM: Database connection error
+  - Check that DATABASE_URL password matches POSTGRES_PASSWORD
+  - Restart: docker compose restart app postgres
+
+PROBLEM: Photos not showing after upload
+  - The uploads volume persists between restarts automatically
+  - Check: docker compose exec app ls /app/public/uploads
+
+================================================================
+SERVER MAINTENANCE TIPS
+================================================================
+
+1. Keep Docker updated:
+   apt update && apt upgrade -y
+
+2. Monitor disk space:
+   df -h
+
+3. Clean unused Docker images (saves disk space):
+   docker system prune -f
+
+4. Monitor memory usage:
+   free -h
+
+5. Check if server is running well:
+   htop
+   (Install with: apt install htop)
+
+================================================================
+SUMMARY OF ALL FILES CREATED FOR DOCKER
+================================================================
+
+  Dockerfile              - How to build the app image
+  docker-compose.yml      - All services (app, postgres, nginx, certbot)
+  docker-entrypoint.sh    - Runs DB migrations on startup
+  .dockerignore           - Files to exclude from the image
+  .env.production.example - Template for environment variables
+  nginx/nginx.conf        - Nginx reverse proxy with SSL
+  deploy.sh               - Automated deploy script
+
+================================================================
+   Need help? Check logs: docker compose logs -f
+================================================================
