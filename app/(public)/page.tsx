@@ -19,23 +19,33 @@ export const metadata: Metadata = {
 };
 
 async function getPublicData() {
-  const [activities, events, gallery, testimonials, heroBgRaw] = await Promise.all([
-    prisma.activity.findMany({ orderBy: { order: "asc" }, take: 6 }),
-    prisma.event.findMany({
-      where: { published: true, date: { gte: new Date() } },
-      orderBy: { date: "asc" },
-      take: 4,
-    }),
-    prisma.gallery.findMany({ orderBy: { order: "asc" }, take: 9 }),
-    prisma.testimonial.findMany({
-      where: { published: true },
-      orderBy: { createdAt: "desc" },
-      take: 4,
-    }),
-    prisma.$queryRaw<{ value: string }[]>`SELECT value FROM site_settings WHERE key = 'hero_bg' LIMIT 1`.catch(() => []),
-  ]);
-  const heroBg = (heroBgRaw as { value: string }[])[0]?.value ?? "/images/hero-bg.jpg";
-  return { activities, events, gallery, testimonials, heroBg };
+  try {
+    const [activities, events, gallery, testimonials, heroBgRaw] = await Promise.all([
+      prisma.activity.findMany({ orderBy: { order: "asc" }, take: 6 }),
+      prisma.event.findMany({
+        where: { published: true, date: { gte: new Date() } },
+        orderBy: { date: "asc" },
+        take: 4,
+      }),
+      prisma.gallery.findMany({ orderBy: { order: "asc" }, take: 9 }),
+      prisma.testimonial.findMany({
+        where: { published: true },
+        orderBy: { createdAt: "desc" },
+        take: 4,
+      }),
+      prisma.$queryRaw<{ value: string }[]>`SELECT value FROM site_settings WHERE key = 'hero_bg' LIMIT 1`.catch(() => []),
+    ]);
+    const heroBg = (heroBgRaw as { value: string }[])[0]?.value ?? "/images/hero-bg.jpg";
+    return { activities, events, gallery, testimonials, heroBg };
+  } catch {
+    return {
+      activities: [],
+      events: [],
+      gallery: [],
+      testimonials: [],
+      heroBg: "/images/hero-bg.jpg",
+    };
+  }
 }
 
 export default async function HomePage() {
