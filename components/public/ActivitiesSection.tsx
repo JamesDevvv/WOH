@@ -16,14 +16,7 @@ interface Activity {
 }
 
 export function ActivitiesSection({ activities }: { activities: Activity[] }) {
-  const defaultActivities: Activity[] = [
-    { id: "1", title: "Morning Service", schedule: "Every Sunday, 9:00 AM", description: "Join us for inspiring worship and biblical teaching every Sunday morning.", icon: "Sun" },
-    { id: "2", title: "Youth Service", schedule: "Every Friday, 6:00 PM", description: "Dynamic worship and teaching programs specifically for teens and young adults.", icon: "Users" },
-    { id: "3", title: "Children's Ministry", schedule: "Every Sunday, 9:00 AM", description: "Fun, age-appropriate lessons and activities that children love during service.", icon: "Baby" },
-    { id: "4", title: "Prayer Meetings", schedule: "Every Tuesday, 6:30 AM", description: "Come together in prayer and intercession for our community and beyond.", icon: "HandHeart" },
-  ];
-
-  const displayActivities = activities.length > 0 ? activities.slice(0, 4) : defaultActivities;
+  if (activities.length === 0) return null;
 
   return (
     <section id="activities" className="py-20 bg-[#F6FAFD]">
@@ -34,7 +27,7 @@ export function ActivitiesSection({ activities }: { activities: Activity[] }) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {displayActivities.map((activity) => {
+          {activities.slice(0, 4).map((activity) => {
             const iconName = activity.icon ?? "Sun";
             const Icon = iconMap[iconName] ?? Sun;
             return (
