@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { unstable_noStore as noStore } from "next/cache";
 import { prisma } from "@/lib/db";
 import { PublicNav } from "@/components/public/PublicNav";
 import { HeroSection } from "@/components/public/HeroSection";
@@ -21,6 +22,7 @@ export const metadata: Metadata = {
 const DEFAULT_HERO = null;
 
 async function getPublicData() {
+  noStore();
   try {
     const [activities, events, gallery, testimonials] = await Promise.all([
       prisma.activity.findMany({ orderBy: { order: "asc" }, take: 6 }),
@@ -40,11 +42,11 @@ async function getPublicData() {
     // Fetch hero BG separately so one failure doesn't break everything
     let heroBg: string | null = DEFAULT_HERO;
     try {
-      const rows = await prisma.$queryRaw<{ value: string }[]>`
-        SELECT value FROM site_settings WHERE key = 'hero_bg' LIMIT 1
-      `;
-      if (rows.length > 0 && rows[0].value) heroBg = rows[0].value;
-    } catch { /* use default */ }
+      const setting = await prisma.siteSetting.findUnique({ where: { key: "hero_bg" } });
+      if (setting?.value) heroBg = setting.value;
+    } catch (e) {
+      console.error("[public] hero_bg fetch error:", e);
+    }
 
     return { activities, events, gallery, testimonials, heroBg };
   } catch {
