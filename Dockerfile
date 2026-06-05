@@ -47,6 +47,7 @@ COPY --from=builder /app/public ./public
 # Copy full node_modules for Prisma CLI (needed for migrations)
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 # Writable uploads directory
 RUN mkdir -p ./public/uploads && chown -R nextjs:nodejs ./public/uploads
