@@ -52,7 +52,7 @@ export function AboutSection({ heroBg }: Props) {
               fill
               className="object-cover"
               priority
-              unoptimized={!!(heroBg && heroBg.startsWith("http"))}
+              unoptimized
             />
             {/* fallback gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-[#0A1931]/70 to-[#1A3D63]/50 flex items-center justify-center">

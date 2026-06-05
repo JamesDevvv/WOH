@@ -17,7 +17,7 @@ export function HeroSection({ heroBg }: Props) {
           fill
           className="object-cover object-center"
           priority
-          unoptimized={heroBg.startsWith("http")}
+          unoptimized
         />
       </div>
       <div className="absolute inset-0 bg-[#0A1931]/70" />

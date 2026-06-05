@@ -18,9 +18,11 @@ export const metadata: Metadata = {
     "Word of Hope Sta. Clara — A vibrant church community growing together in faith, love, and hope.",
 };
 
+const DEFAULT_HERO = "/images/hero-bg.jpg";
+
 async function getPublicData() {
   try {
-    const [activities, events, gallery, testimonials, heroBgRaw] = await Promise.all([
+    const [activities, events, gallery, testimonials] = await Promise.all([
       prisma.activity.findMany({ orderBy: { order: "asc" }, take: 6 }),
       prisma.event.findMany({
         where: { published: true, date: { gte: new Date() } },
@@ -33,18 +35,20 @@ async function getPublicData() {
         orderBy: { createdAt: "desc" },
         take: 4,
       }),
-      prisma.$queryRaw<{ value: string }[]>`SELECT value FROM site_settings WHERE key = 'hero_bg' LIMIT 1`.catch(() => []),
     ]);
-    const heroBg = (heroBgRaw as { value: string }[])[0]?.value ?? "/images/hero-bg.jpg";
+
+    // Fetch hero BG separately so one failure doesn't break everything
+    let heroBg = DEFAULT_HERO;
+    try {
+      const rows = await prisma.$queryRaw<{ value: string }[]>`
+        SELECT value FROM site_settings WHERE key = 'hero_bg' LIMIT 1
+      `;
+      if (rows.length > 0 && rows[0].value) heroBg = rows[0].value;
+    } catch { /* use default */ }
+
     return { activities, events, gallery, testimonials, heroBg };
   } catch {
-    return {
-      activities: [],
-      events: [],
-      gallery: [],
-      testimonials: [],
-      heroBg: "/images/hero-bg.jpg",
-    };
+    return { activities: [], events: [], gallery: [], testimonials: [], heroBg: DEFAULT_HERO };
   }
 }
 
