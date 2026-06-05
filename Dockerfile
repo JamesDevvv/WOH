@@ -20,6 +20,13 @@ RUN npx prisma generate
 # Build Next.js (standalone output)
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+# Dummy values so Next.js can build without a live DB connection
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+ENV NEXTAUTH_SECRET="build-time-placeholder-secret"
+ENV AUTH_SECRET="build-time-placeholder-secret"
+ENV NEXTAUTH_URL="http://localhost:3000"
+ENV AUTH_URL="http://localhost:3000"
+ENV NEXT_PUBLIC_APP_URL="http://localhost:3000"
 RUN npm run build
 
 # ── Stage 3: Production runner ────────────────────────────────────────────────

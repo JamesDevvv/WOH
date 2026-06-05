@@ -10,6 +10,8 @@ import { AboutSection } from "@/components/public/AboutSection";
 import { VisitUsSection } from "@/components/public/VisitUsSection";
 import { PublicFooter } from "@/components/public/PublicFooter";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Word of Hope Sta. Clara",
   description:
