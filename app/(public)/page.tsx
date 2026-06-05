@@ -38,7 +38,7 @@ async function getPublicData() {
     ]);
 
     // Fetch hero BG separately so one failure doesn't break everything
-    let heroBg = DEFAULT_HERO;
+    let heroBg: string | null = DEFAULT_HERO;
     try {
       const rows = await prisma.$queryRaw<{ value: string }[]>`
         SELECT value FROM site_settings WHERE key = 'hero_bg' LIMIT 1
