@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-interface Props { heroBg?: string; }
+interface Props { heroBg?: string | null; }
 
 const pillars = [
   {
@@ -45,15 +45,17 @@ export function AboutSection({ heroBg }: Props) {
           </div>
 
           {/* Right: photo */}
-          <div className="relative h-80 lg:h-96 rounded-2xl overflow-hidden shadow-lg">
-            <Image
-              src={heroBg ?? "/images/about-congregation.jpg"}
-              alt="Word of Hope congregation"
-              fill
-              className="object-cover"
-              priority
-              unoptimized
-            />
+          <div className="relative h-80 lg:h-96 rounded-2xl overflow-hidden shadow-lg bg-[#1A3D63]">
+            {heroBg && (
+              <Image
+                src={heroBg}
+                alt="Word of Hope congregation"
+                fill
+                className="object-cover"
+                priority
+                unoptimized
+              />
+            )}
             {/* fallback gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-[#0A1931]/70 to-[#1A3D63]/50 flex items-center justify-center">
               <div className="text-center text-white">

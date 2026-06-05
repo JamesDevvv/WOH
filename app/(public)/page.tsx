@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     "Word of Hope Sta. Clara — A vibrant church community growing together in faith, love, and hope.",
 };
 
-const DEFAULT_HERO = "/images/hero-bg.jpg";
+const DEFAULT_HERO = null;
 
 async function getPublicData() {
   try {
@@ -48,7 +48,7 @@ async function getPublicData() {
 
     return { activities, events, gallery, testimonials, heroBg };
   } catch {
-    return { activities: [], events: [], gallery: [], testimonials: [], heroBg: DEFAULT_HERO };
+    return { activities: [], events: [], gallery: [], testimonials: [], heroBg: null };
   }
 }
 

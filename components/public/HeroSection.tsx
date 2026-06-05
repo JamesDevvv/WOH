@@ -3,22 +3,24 @@ import Image from "next/image";
 import { Navigation } from "lucide-react";
 
 interface Props {
-  heroBg: string;
+  heroBg: string | null;
 }
 
 export function HeroSection({ heroBg }: Props) {
   return (
     <section className="relative h-screen max-h-screen flex items-center justify-center overflow-hidden pt-14">
       {/* Background photo */}
-      <div className="absolute inset-0">
-        <Image
-          src={heroBg}
-          alt="Hero background"
-          fill
-          className="object-cover object-center"
-          priority
-          unoptimized
-        />
+      <div className="absolute inset-0 bg-[#0A1931]">
+        {heroBg && (
+          <Image
+            src={heroBg}
+            alt="Hero background"
+            fill
+            className="object-cover object-center"
+            priority
+            unoptimized
+          />
+        )}
       </div>
       <div className="absolute inset-0 bg-[#0A1931]/70" />
 
